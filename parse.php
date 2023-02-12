@@ -182,7 +182,7 @@ function is_type($type)
 
 function is_var($var)
 {
-    return preg_match('/^(GF|LF|TF)@([a-zA-Z]|(_|-|$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|$|&|%|\*|!|\?))*$/', $var);
+    return preg_match('/^(GF|LF|TF)@([a-zA-Z]|(_|-|\$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|\$|&|%|\*|!|\?))*$/', $var);
 }
 
 function is_nil($nil)
@@ -198,7 +198,7 @@ function parse_symb($symb)
     elseif (preg_match('/^bool@(true|false)$/', $symb)) {
         return 1;
     }
-    elseif (preg_match('/^int@(-?)\d*$/', $symb)) {
+    elseif (preg_match('/^int@(-|\+?)\d+$/', $symb)) {
         return 1;
     }
     elseif (preg_match('/^string@([^\\#\s]*(\\\d\d\d)?)*$/', $symb)) {
@@ -211,7 +211,7 @@ function parse_symb($symb)
 
 function is_label($label)
 {
-    return preg_match('/^([a-zA-Z]|(_|-|$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|$|&|%|\*|!|\?))*$/', $label);
+    return preg_match('/^([a-zA-Z]|(_|-|\$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|\$|&|%|\*|!|\?))*$/', $label);
 }
 
 function error($error_code)
