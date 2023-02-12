@@ -157,11 +157,14 @@ function add_args($instruction, $args)
 {
     for ($i = 1; $i < count($args); $i++) {
         $type = get_type($args[$i]);
-        $value = explode("@", $args[$i]);
-        if (is_type($type) || $type == "nil")
+        $args[$i] = str_replace('&', '&amp;', $args[$i]);
+        $value = explode("@", $args[$i], 2);
+        if (is_type($type) || $type == "nil") {
             add_arg($instruction, $type, $i, $value[1]);
-        else
+        }
+        else {
             add_arg($instruction, $type, $i, $args[$i]);
+        }
     }
 }
 
@@ -201,7 +204,7 @@ function parse_symb($symb)
     elseif (preg_match('/^int@(-|\+?)\d+$/', $symb)) {
         return 1;
     }
-    elseif (preg_match('/^string@([^\\#\s]*(\\\d\d\d)?)*$/', $symb)) {
+    elseif (preg_match('/^string@([^#\s\\\]*(\\\[0-9][0-9][0-9])*)*$/', $symb)) {
         return 1;
     }
     else {
@@ -227,6 +230,7 @@ function scan($line)
     if (strlen($instruction) == 0) {
         return array();
     }
+    $instruction = preg_replace('/\s+/', " ", $instruction);
     $instruction = explode(" ", $instruction);
     $instruction[0] = strtoupper($instruction[0]);
     return $instruction;
@@ -238,7 +242,7 @@ function parse_header()
         $header = preg_replace('/\s*/', "", $header);
         $header = preg_replace('/#.*/', "", $header);
         if (strlen($header) > 0) {
-            if ($header == ".IPPcode23") {
+            if (strtoupper($header) == ".IPPCODE23") {
                 return;
             }
             else {
