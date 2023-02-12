@@ -3,7 +3,7 @@
  * @file parse.php
  * @brief IPPcode21 analyser
  * @author Marián Tarageľ
- * @date 11.2.2023
+ * @date 12.2.2023
  */
 
 ini_set('display_errors', 'stderr');
@@ -29,10 +29,9 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 3) {
                 error(23);
             }
-            if (!parse_var($token_array[1]) || !parse_symb($token_array[2])) {
+            if (!is_var($token_array[1]) || !parse_symb($token_array[2])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         case "CREATEFRAME":
@@ -43,7 +42,6 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 1) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
     
         case "DEFVAR":
@@ -51,10 +49,9 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 2) {
                 error(23);
             }
-            if (!parse_var($token_array[1])) {
+            if (!is_var($token_array[1])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
 
         case "CALL":
@@ -63,10 +60,9 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 2) {
                 error(23);
             }
-            if (!parse_label($token_array[1])) {
+            if (!is_label($token_array[1])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         case "PUSHS":
@@ -79,7 +75,6 @@ while ($line = fgets(STDIN)) {
             if (!parse_symb($token_array[1])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         case "ADD":
@@ -98,20 +93,18 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 4) {
                 error(23);
             }
-            if (!parse_var($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
+            if (!is_var($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         case "READ":
             if (count($token_array) != 3) {
                 error(23);
             }
-            if (!parse_var($token_array[1])) {
+            if (!is_var($token_array[1]) || !is_type($token_array[2])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         case "JUMPIFEQ":
@@ -119,16 +112,16 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 4) {
                 error(23);
             }
-            if (!parse_label($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
+            if (!is_label($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
                 error(23);
             }
-            generate_xml($program, $token_array);
             break;
         
         default:
             error(22);
             break;
     }
+    generate_xml($program, $token_array);
 }
 
 $dom = dom_import_simplexml($program)->ownerDocument;
@@ -137,17 +130,38 @@ echo $dom->saveXML($dom, LIBXML_NOEMPTYTAG);
 
 exit(0);
 
-function add_arg($instruction, $type, $num)
+function add_arg($instruction, $type, $num, $value)
 {
-    $arg = $instruction->addChild('arg' . $num);
+    $arg = $instruction->addChild('arg' . $num, $value);
     $arg->addAttribute('type', $type);
+}
+
+function get_type($token)
+{
+    if (is_var($token)) {
+        return "var";
+    }
+    elseif (is_type($token)) {
+        return "type";
+    }
+    elseif (is_label($token)) {
+        return "label";
+    }
+    else {
+        $token_divided = explode("@", $token);
+        return $token_divided[0];
+    }
 }
 
 function add_args($instruction, $args)
 {
     for ($i = 1; $i < count($args); $i++) {
-        $type_and_value = explode("@", $args[$i]);
-        add_arg($instruction, $type_and_value[0], $i);
+        $type = get_type($args[$i]);
+        $value = explode("@", $args[$i]);
+        if (is_type($type) || $type == "nil")
+            add_arg($instruction, $type, $i, $value[1]);
+        else
+            add_arg($instruction, $type, $i, $args[$i]);
     }
 }
 
@@ -161,20 +175,27 @@ function generate_xml($program, $token_array)
     add_args($instruction, $token_array);
 }
 
-function parse_var($var)
+function is_type($type)
+{
+    return preg_match('/^(int|string|bool)$/', $type);
+}
+
+function is_var($var)
 {
     return preg_match('/^(GF|LF|TF)@([a-zA-Z]|(_|-|$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|$|&|%|\*|!|\?))*$/', $var);
 }
 
+function is_nil($nil)
+{
+    return preg_match('/^nil@nil$/', $nil);
+}
+
 function parse_symb($symb)
 {
-    if (parse_var($symb)) {
+    if (is_var($symb) || is_nil($symb)) {
         return 1;
     }
     elseif (preg_match('/^bool@(true|false)$/', $symb)) {
-        return 1;
-    }
-    elseif (preg_match('/^nil@nil$/', $symb)) {
         return 1;
     }
     elseif (preg_match('/^int@(-?)\d*$/', $symb)) {
@@ -188,7 +209,7 @@ function parse_symb($symb)
     }
 }
 
-function parse_label($label)
+function is_label($label)
 {
     return preg_match('/^([a-zA-Z]|(_|-|$|&|%|\*|!|\?))([a-zA-Z0-9]|(_|-|$|&|%|\*|!|\?))*$/', $label);
 }

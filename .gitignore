@@ -2,5 +2,4 @@ tests
 test.php
 options
 jexamxml.jar
-IPP23_parser_tests
 *.src
