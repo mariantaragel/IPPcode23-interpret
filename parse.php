@@ -1,7 +1,7 @@
 <?php
 /**
  * @file parse.php
- * @brief IPPcode21 analyser
+ * @brief IPPcode23 analyser
  * @author Marián Tarageľ
  * @date 18.2.2023
  */
