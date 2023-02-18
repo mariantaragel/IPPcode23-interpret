@@ -200,7 +200,15 @@ function is_lit_bool($bool)
 
 function is_lit_int($int)
 {
-    return preg_match('/^int@(-|\+?)\d+$/', $int);
+    if (preg_match('/^int@(-|\+)?\d+$/', $int)) {
+        return 1;
+    }
+    elseif (preg_match('/^int@0[xX][\da-fA-F]+$/', $int)) {
+        return 1;
+    }
+    else {
+        return preg_match('/^int@0[oO][0-7]+$/', $int);
+    }
 }
 
 function is_lit_string($string)
