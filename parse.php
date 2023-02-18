@@ -3,7 +3,7 @@
  * @file parse.php
  * @brief IPPcode21 analyser
  * @author Marián Tarageľ
- * @date 12.2.2023
+ * @date 18.2.2023
  */
 
 ini_set('display_errors', 'stderr');
@@ -29,7 +29,7 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 3) {
                 error(23);
             }
-            if (!is_var($token_array[1]) || !parse_symb($token_array[2])) {
+            if (!is_var($token_array[1]) || !is_symb($token_array[2])) {
                 error(23);
             }
             break;
@@ -72,7 +72,7 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 2) {
                 error(23);
             }
-            if (!parse_symb($token_array[1])) {
+            if (!is_symb($token_array[1])) {
                 error(23);
             }
             break;
@@ -93,7 +93,7 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 4) {
                 error(23);
             }
-            if (!is_var($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
+            if (!is_var($token_array[1]) || !is_symb($token_array[2]) || !is_symb($token_array[3])) {
                 error(23);
             }
             break;
@@ -112,7 +112,7 @@ while ($line = fgets(STDIN)) {
             if (count($token_array) != 4) {
                 error(23);
             }
-            if (!is_label($token_array[1]) || !parse_symb($token_array[2]) || !parse_symb($token_array[3])) {
+            if (!is_label($token_array[1]) || !is_symb($token_array[2]) || !is_symb($token_array[3])) {
                 error(23);
             }
             break;
@@ -193,18 +193,27 @@ function is_nil($nil)
     return preg_match('/^nil@nil$/', $nil);
 }
 
-function parse_symb($symb)
+function is_lit_bool($bool)
+{
+    return preg_match('/^bool@(true|false)$/', $bool);
+}
+
+function is_lit_int($int)
+{
+    return preg_match('/^int@(-|\+?)\d+$/', $int);
+}
+
+function is_lit_string($string)
+{
+    return preg_match('/^string@([^#\s\\\]*(\\\[0-9][0-9][0-9])*)*$/', $string);
+}
+
+function is_symb($symb)
 {
     if (is_var($symb) || is_nil($symb)) {
         return 1;
     }
-    elseif (preg_match('/^bool@(true|false)$/', $symb)) {
-        return 1;
-    }
-    elseif (preg_match('/^int@(-|\+?)\d+$/', $symb)) {
-        return 1;
-    }
-    elseif (preg_match('/^string@([^#\s\\\]*(\\\[0-9][0-9][0-9])*)*$/', $symb)) {
+    elseif (is_lit_bool($symb) || is_lit_int($symb) || is_lit_string($symb)) {
         return 1;
     }
     else {
