@@ -3,13 +3,14 @@
  * @file parse.php
  * @brief IPPcode23 analyser
  * @author Marián Tarageľ
- * @date 26.2.2023
+ * @date 27.2.2023
  */
 
 ini_set('display_errors', 'stderr');
 
-class Parser extends DataType
+class Parser
 {
+    protected $data;
     private $header = ".IPPCODE23";
     private $help_message = "usage: parse.php [--help]
 A filter script reads the source code in IPPcode23 from standard input, checks
@@ -17,6 +18,12 @@ the lexical and syntactic correctness of the code and writes to standard output
 XML representation of the program.
 
 -h, --help\tshow this help message and exit\n";
+
+    // Parser constructor
+    public function __construct()
+    {
+        $this->data = new DataType();
+    }
 
     // Argument parser
     public function parse_args($argc, $argv)
@@ -95,7 +102,7 @@ XML representation of the program.
         if (count($instruction) != 2) {
             $this->error_handler(23);
         }
-        if (!$this->is_label($instruction[1])) {
+        if (!$this->data->is_label($instruction[1])) {
             $this->error_handler(23);
         }
     }
@@ -106,7 +113,7 @@ XML representation of the program.
         if (count($instruction) != 2) {
             $this->error_handler(23);
         }
-        if (!$this->is_symb($instruction[1])) {
+        if (!$this->data->is_symb($instruction[1])) {
             $this->error_handler(23);
         }
     }
@@ -117,7 +124,7 @@ XML representation of the program.
         if (count($instruction) != 2) {
             $this->error_handler(23);
         }
-        if (!$this->is_var($instruction[1])) {
+        if (!$this->data->is_var($instruction[1])) {
             $this->error_handler(23);
         }
     }
@@ -128,7 +135,7 @@ XML representation of the program.
         if (count($instruction) != 3) {
             $this->error_handler(23);
         }
-        if (!$this->is_var($instruction[1]) || !$this->is_symb($instruction[2])) {
+        if (!$this->data->is_var($instruction[1]) || !$this->data->is_symb($instruction[2])) {
             $this->error_handler(23);
         }
     }
@@ -139,7 +146,7 @@ XML representation of the program.
         if (count($instruction) != 3) {
             $this->error_handler(23);
         }
-        if (!$this->is_var($instruction[1]) || !$this->is_type($instruction[2])) {
+        if (!$this->data->is_var($instruction[1]) || !$this->data->is_type($instruction[2])) {
             $this->error_handler(23);
         }
     }
@@ -150,9 +157,9 @@ XML representation of the program.
         if (count($instruction) != 4) {
             $this->error_handler(23);
         }
-        if (!$this->is_label($instruction[1]) ||
-            !$this->is_symb($instruction[2]) ||
-            !$this->is_symb($instruction[3])) {
+        if (!$this->data->is_label($instruction[1]) ||
+            !$this->data->is_symb($instruction[2]) ||
+            !$this->data->is_symb($instruction[3])) {
             $this->error_handler(23);
         }
     }
@@ -163,9 +170,9 @@ XML representation of the program.
         if (count($instruction) != 4) {
             $this->error_handler(23);
         }
-        if (!$this->is_var($instruction[1]) ||
-            !$this->is_symb($instruction[2]) ||
-            !$this->is_symb($instruction[3])) {
+        if (!$this->data->is_var($instruction[1]) ||
+            !$this->data->is_symb($instruction[2]) ||
+            !$this->data->is_symb($instruction[3])) {
             $this->error_handler(23);
         }
     }
@@ -264,12 +271,13 @@ class XMLGenerator
 {
     protected $simpleXML;
     protected $data;
+    private $xml_header = '<?xml version="1.0" encoding="utf-8"?><program></program>';
 
     // XMLGenerator constructor
-    public function __construct($simpleXML, $data)
+    public function __construct()
     {
-        $this->simpleXML = $simpleXML;
-        $this->data = $data;
+        $this->simpleXML = new SimpleXMLElement($this->xml_header);
+        $this->data = new DataType();
     }
 
     // Generate XML of valid instruction
@@ -320,16 +328,12 @@ class XMLGenerator
     }
 }
 
-// Creating objects
-$xml_header = '<?xml version="1.0" encoding="utf-8"?><program></program>';
-$simpleXML = new SimpleXMLElement($xml_header);
-$data = new DataType();
-$program = new XMLGenerator($simpleXML, $data);
-$program->add_lang_code('language', 'IPPcode23');
 $parser = new Parser();
-
 $parser->parse_args($argc, $argv);
 $parser->parse_header();
+
+$program = new XMLGenerator();
+$program->add_lang_code('language', 'IPPcode23');
 
 // Read source code by lines
 while ($line = fgets(STDIN)) {
