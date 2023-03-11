@@ -3,7 +3,7 @@
  * @file parse.php
  * @brief IPPcode23 analyser
  * @author Marián Tarageľ
- * @date 27.2.2023
+ * @date 9.3.2023
  */
 
 ini_set('display_errors', 'stderr');
@@ -19,13 +19,17 @@ XML representation of the program.
 
 -h, --help\tshow this help message and exit\n";
 
-    // Parser constructor
+    /** Parser constructor */
     public function __construct()
     {
         $this->data = new DataType();
     }
-
-    // Argument parser
+    
+    /**
+     * Argument parser
+     * @param mixed $argc The number of arguments passed to script
+     * @param mixed $argv Array of arguments passed to script
+     */
     public function parse_args($argc, $argv)
     {
         if ($argc > 2) {
@@ -42,7 +46,7 @@ XML representation of the program.
         }
     }
 
-    // Parse header .IPPcode23
+    /** Parse header .IPPcode23 */
     public function parse_header()
     {
         while ($header = fgets(STDIN)) {
@@ -60,21 +64,28 @@ XML representation of the program.
         $this->error_handler(21);
     }
 
-    // Handling errors
+    /**
+     * Handling errors
+     * @param mixed $error_code Return code of a script
+     */
     public function error_handler($error_code)
     {
         fprintf(STDERR, "Error: " . $error_code . "\n");
         exit($error_code);
     }
 
-    // Print help message
+    /** Print help message */
     private function help()
     {
         echo $this->help_message;
         exit(0);
     }
 
-    // One line of source code will be transformed to token array
+    /**
+     * One line of source code will be transformed to token array
+     * @param mixed $line Line of source code
+     * @return array Array of tokens
+     */
     public function scan($line)
     {
         $instruction = preg_replace('/#.*/', "", $line);
@@ -88,7 +99,10 @@ XML representation of the program.
         return $instruction;
     }
 
-    // Check syntax of instructions with no arguments
+    /**
+     * Check syntax of instructions with no arguments
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode($instruction)
     {
         if (count($instruction) != 1) {
@@ -96,7 +110,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with label argument
+    /**
+     * Check syntax of instruction with label argument
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_label($instruction)
     {
         if (count($instruction) != 2) {
@@ -107,7 +124,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with symb argument
+    /**
+     * Check syntax of instruction with symb argument
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_symb($instruction)
     {
         if (count($instruction) != 2) {
@@ -118,7 +138,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with var argument
+    /**
+     * Check syntax of instruction with var argument
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_var($instruction)
     {
         if (count($instruction) != 2) {
@@ -129,7 +152,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with two arguments var and symb
+    /**
+     * Check syntax of instruction with two arguments var and symb
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_var_symb($instruction)
     {
         if (count($instruction) != 3) {
@@ -140,7 +166,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with two arguments var and type
+    /**
+     * Check syntax of instruction with two arguments var and type
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_var_type($instruction)
     {
         if (count($instruction) != 3) {
@@ -151,7 +180,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with three arguments label, symb and symb
+    /**
+     * Check syntax of instruction with three arguments label, symb and symb
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_label_symb_symb($instruction)
     {
         if (count($instruction) != 4) {
@@ -164,7 +196,10 @@ XML representation of the program.
         }
     }
 
-    // Check syntax of instruction with three arguments var, symb and symb
+    /**
+     * Check syntax of instruction with three arguments var, symb and symb
+     * @param mixed $instruction Array of instruction tokens
+     */
     public function check_opcode_var_symb_symb($instruction)
     {
         if (count($instruction) != 4) {
@@ -190,22 +225,38 @@ class DataType
     private $lit_int_hexadecimal_regex = '/^int@0[xX][\da-fA-F]+$/';
     private $lit_int_octal_regex = '/^int@0[oO][0-7]+$/';
 
-    // Match type
+    /**
+     * Match type
+     * @param mixed $type The input token
+     * @return int 1 if the token type is type, otherwise 0
+     */
     public function is_type($type) {
         return preg_match($this->type_regex, $type);
     }
 
-    // Match var
+    /**
+     * Match var
+     * @param mixed $var The input token
+     * @return int 1 if the token type is var, otherwise 0
+     */
     public function is_var($var) {
         return preg_match($this->var_regex, $var);
     }
 
-    // Match label
+    /**
+     * Match label
+     * @param mixed $label The input token
+     * @return int 1 if the token type is label, otherwise 0
+     */
     public function is_label($label) {
         return preg_match($this->label_regex, $label);
     }
 
-    // Match symb
+    /**
+     * Match symb
+     * @param mixed $symb The input token
+     * @return int 1 if the token type is symb, otherwise 0
+     */
     public function is_symb($symb)
     {
         if ($this->is_var($symb) || $this->is_nil($symb)) {
@@ -219,22 +270,39 @@ class DataType
         }
     }
 
-    // Match nil
+    /**
+     * Match nil
+     * @param mixed $nil The input token
+     * @return int 1 if the token type is nil, otherwise 0
+     */
     public function is_nil($nil) {
         return preg_match($this->nil_regex, $nil);
     }
 
-    // Match lit bool
+    /**
+     * Match lit bool
+     * @param mixed $bool The input token
+     * @return int 1 if the token type is lit bool, otherwise 0
+     */
     public function is_lit_bool($bool) {
         return preg_match($this->lit_bool_regex, $bool);
     }
 
     // Match lit string
+    /**
+     * Match lit string
+     * @param mixed $string The input token
+     * @return int 1 if the token type is lit string, otherwise 0
+     */
     public function is_lit_string($string) {
         return preg_match($this->lit_string_regex, $string);
     }
 
-    // Match lit int (decimal, hexadecimal and octal)
+    /**
+     * Match lit int (decimal, hexadecimal and octal)
+     * @param mixed $int The input token
+     * @return int 1 if the token type is lit int, otherwise 0
+     */
     public function is_lit_int($int)
     {
         if (preg_match($this->lit_int_decimal_regex, $int)) {
@@ -248,7 +316,11 @@ class DataType
         }
     }
 
-    // Return type of token
+    /**
+     * Return type of token
+     * @param mixed $token The input token
+     * @return string String representation of token type
+     */
     public function get_type($token)
     {
         if ($this->is_var($token)) {
@@ -273,14 +345,17 @@ class XMLGenerator
     protected $data;
     private $xml_header = '<?xml version="1.0" encoding="utf-8"?><program></program>';
 
-    // XMLGenerator constructor
+    /** XMLGenerator constructor */
     public function __construct()
     {
         $this->simpleXML = new SimpleXMLElement($this->xml_header);
         $this->data = new DataType();
     }
 
-    // Generate XML of valid instruction
+    /**
+     * Generate XML of valid instruction
+     * @param mixed $token_array Instruction in array of tokens
+     */
     public function generate_xml($token_array)
     {
         static $order = 1;
@@ -291,7 +366,7 @@ class XMLGenerator
         $this->add_args($instruction, $token_array);
     }
 
-    // Print XML to stdout
+    /** Print XML to stdout */
     public function print_xml()
     {
         $dom = dom_import_simplexml($this->simpleXML)->ownerDocument;
@@ -299,19 +374,33 @@ class XMLGenerator
         echo $dom->saveXML($dom, LIBXML_NOEMPTYTAG);
     }
 
-    // Add attribute language with value
+    /**
+     * Add attribute language with value
+     * @param mixed $lang Language
+     * @param mixed $value Name of a language
+     */
     public function add_lang_code($lang, $value) {
         $this->simpleXML->addAttribute($lang, $value);
     }
 
-    // Add one agrument of instruction to XML
+    /**
+     * Add one agrument of instruction to XML
+     * @param mixed $instruction XML node of instruction
+     * @param mixed $type Type of argument
+     * @param mixed $num Agrument order
+     * @param mixed $value Value of argument
+     */
     private function add_arg($instruction, $type, $num, $value)
     {
         $arg = $instruction->addChild('arg' . $num, $value);
         $arg->addAttribute('type', $type);
     }
 
-    // Add more arguments of instruction to XML
+    /**
+     * Add more arguments of instruction to XML
+     * @param mixed $instruction XML node of instruction
+     * @param mixed $args Array of instruction
+     */
     private function add_args($instruction, $args)
     {
         for ($i = 1; $i < count($args); $i++) {
