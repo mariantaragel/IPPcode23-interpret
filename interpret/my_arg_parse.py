@@ -4,31 +4,31 @@
 
 import argparse
 import sys
-from error import ERR_ARGS
+from error import Error
 
 class Myargparse(argparse.ArgumentParser):
 
-    def error(self, message):
-        self.print_usage(sys.stderr)
-        args = {'prog': self.prog, 'message': message}
-        self.exit(ERR_ARGS, ('%(prog)s: error: %(message)s\n') % args)
-
     @staticmethod
-    def is_input_defined(args) -> bool:
+    def is_input_defined(args: object) -> bool:
         if args.source != 'STDIN' or args.input != 'STDIN':
             return True
         else:
             return False
+
+    def error(self, message: str) -> None:
+        self.print_usage(sys.stderr)
+        args = {'prog': self.prog, 'message': message}
+        self.exit(Error.ARGS.value, ('%(prog)s: error: %(message)s\n') % args)
         
-    def check_args_cobination(self, args):
+    def check_args_cobination(self, args: object):
         if args.help and self.is_input_defined(args):
             self.error('cannot combine --help with other arguments')
         
-    def if_defined_print_help(self, args):
+    def if_defined_print_help(self, args: object) -> None:
         if args.help:
             self.print_help()
             exit(0)
 
-    def check_no_arguments(self, args):
+    def check_no_arguments(self, args: object) -> None:
         if not self.is_input_defined(args):
             self.error('no arguments')

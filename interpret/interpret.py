@@ -4,9 +4,11 @@
 
 from argparse import RawDescriptionHelpFormatter
 from my_arg_parse import Myargparse
+from error import Error
 import xml.etree.ElementTree as ET
-from error import *
-import re
+import xml_tree
+from instruction import Instruction
+from argument import Argument
 
 parser = Myargparse(formatter_class=RawDescriptionHelpFormatter, description="""
 Skript načíta XML reprezentáciu programu a tento program s využitím vstupu
@@ -25,26 +27,21 @@ parser.check_no_arguments(args)
 try:
     tree = ET.parse(args.source)
 except (FileNotFoundError, PermissionError):
-    Error.handle_error(ERR_IN_FILE)
+    Error.handle_error(Error.IN_FILE.value)
 except ET.ParseError:
-    Error.handle_error(ERR_XML_FORMAT)
+    Error.handle_error(Error.XML_FORMAT.value)
 
+program = tree.getroot()
+xml_tree.check_program_element(program)
+xml_tree.check_instruction_elements(program)
 
-root = tree.getroot()
-
-if root.tag != 'program':
-    Error.handle_error(ERR_XML_STRUCT)
-
-if root.attrib.get('language') != 'IPPcode23':
-    Error.handle_error(ERR_XML_STRUCT)
-
-for child in root:
-    if child.tag != 'instruction':
-        Error.handle_error(ERR_XML_STRUCT)
-    if child.attrib.get('order') == None:
-        Error.handle_error(ERR_XML_STRUCT)
-    if child.attrib.get('opcode') == None:
-        Error.handle_error(ERR_XML_STRUCT)
-    if re.match('^\d*$', child.attrib.get('order')) == None:
-        Error.handle_error(ERR_XML_STRUCT)
+for instruction in program:
+    opcode = instruction.attrib.get('opcode').upper()
+    order = instruction.attrib.get('order')
+    ins = Instruction(opcode, order)
     
+    for argument in instruction:
+        type = argument.attrib.get('type')
+        value = argument.text
+        arg = Argument(type, value)
+        ins.add_arg(arg)
