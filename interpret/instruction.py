@@ -14,4 +14,4 @@ class Instruction:
         self.order = order
 
     def add_arg(self, arg: object) -> None:
-        self.args.append(arg)
+        self.args.insert(arg.position, arg)

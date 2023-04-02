@@ -5,34 +5,30 @@
 from instruction import Instruction
 from argument import Argument
 from error import Error
+from frames import Frames
 import re
 
 class Program:
 
     instructions: list
-    labels: list
-    global_frame: dict
-    local_frame: dict
-    temporary_frame: dict
+    position: int
+    labels: dict
+    frames = Frames()
 
     def __init__(self):
         self.instructions = []
-        self.labels = []
-        self.global_frame = {}
-        self.local_frame = None
-        self.temporary_frame = None
+        self.position = 0
+        self.labels = {}
 
     def add_instruction_to_program(self, instruction: object) -> None:
-        if instruction.opcode == 'LABEL':
-            self.labels.append(instruction.args[0].value)
         self.instructions.append(instruction)
 
     def sort_instructions(self) -> None:
         self.instructions.sort(key=lambda instruction: instruction.order)
 
     def get_instruction(self):
-        if len(self.instructions) > 0:
-            return self.instructions.pop(0)
+        if self.position < len(self.instructions):
+            return self.instructions[self.position]
         else:
             return None
         
@@ -48,63 +44,219 @@ class Program:
                 if value == None:
                     value = ""
                 argument = Argument(type, value)
+                argument.add_argument_position(subchild.tag)
                 instruction.add_arg(argument)
 
             self.add_instruction_to_program(instruction)
+
+    def prepocessing(self) -> None:
+        self.sort_instructions()
+        prev_order = -1
+        for instruction in self.instructions:
+            if prev_order == instruction.order:
+                Error.handle_error(Error.XML_STRUCT.value)
+            self.if_label_add(instruction)
+            prev_order = instruction.order
+            self.position += 1
+
+    def if_label_add(self, instruction):
+        if instruction.opcode == 'LABEL':
+            label_name = instruction.args[0].value
+            if label_name not in self.labels:
+                self.labels[label_name] = self.position
+            else:
+                Error.handle_error(Error.SEMANTIC.value)
 
     @staticmethod
     def get_var_frame_and_name(var: str) -> tuple[int, int]:
         arg = var.split("@")
         return arg[0], arg[1]
     
-    def is_var_in_frame(self, var_name: str, frame: str) -> bool:
-        if frame == 'GF':
-            if var_name in self.global_frame:
-                return True
-            else:
-                return False
-        elif frame == 'LF':
-            if var_name in self.local_frame:
-                return True
-            else:
-                return False
-        elif frame == 'TF':
-            if var_name in self.temporary_frame:
-                return True
-            else:
-                return False
+    @staticmethod
+    def replace(match):
+        return int(match.group(1)).to_bytes(1, byteorder="big")
+    
+    def get_val_and_type(self, instruction_arg: object) -> tuple:
+        value = instruction_arg.value
+        type = instruction_arg.type
+        if type == 'var':
+            frame, var_name = self.get_var_frame_and_name(instruction_arg.value)
+            var = self.frames.get_var(var_name, frame)
+            value = var.value
+            type = var.type
+        return value, type
 
     def interpret_defvar(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        self.frames.def_var(var_name, frame)
 
-        if self.is_var_in_frame(var_name, frame) == False:
-            self.global_frame[var_name] = None
+    def interpret_move(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
+        frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        type = instruction.args[1].type
+        value = instruction.args[1].value
+        self.frames.set_var(var_name, frame, value, type)
+
+    # TODO: špecialny prípad type == bool (viz. spec)
+    def interpret_write(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
+        value, type = self.get_val_and_type(instruction.args[0])
+        
+        if type == 'nil':
+            value = ''
+
+        string = re.sub(b'\\\\(\d{3})', self.replace, value.encode('utf-8'))
+        print(string.decode('utf-8'), end='')
+
+
+    def interpret_concat(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
+        
+        frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        value_1, type_1 = self.get_val_and_type(instruction.args[1])
+        value_2, type_2 = self.get_val_and_type(instruction.args[2])
+        
+        if type_1 != 'string' or type_2 != 'string':
+            Error.handle_error(Error.OP_TYPES.value)
+        value = value_1 + value_2
+        self.frames.set_var(var_name, frame, value, 'string')
+
+    def interpret_jump(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
+        label_name = instruction.args[0].value
+        if label_name in self.labels:
+            self.position = self.labels.get(label_name)
         else:
             Error.handle_error(Error.SEMANTIC.value)
 
-    def interpret_move(self, instruction: object) -> None:
-        frame_to, var_name_to = self.get_var_frame_and_name(instruction.args[0].value)
-        type = instruction.args[1].type
-        value = instruction.args[1].value
+    # TODO: jeden operand môže byť nil
+    def interpret_jumpifeq(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         
-        if type == 'var':
-            frame_from, var_name_from = self.get_var_frame_and_name(value)
-            if self.is_var_in_frame(var_name_from, frame_from) == False:
-                Error.handle_error(Error.NO_VAR.value)
-            else:
-                value = self.global_frame.get(var_name_from)
-        
-        if self.is_var_in_frame(var_name_to, frame_to) == True:
-            self.global_frame[var_name_to] = value
+        value_1, type_1 = self.get_val_and_type(instruction.args[1])
+        value_2, type_2 = self.get_val_and_type(instruction.args[2])
+
+        label_name = instruction.args[0].value
+        if label_name in self.labels:
+            if type_1 == type_2 and value_1 == value_2:
+                self.position = self.labels.get(label_name)
         else:
-            Error.handle_error(Error.NO_VAR.value)
+            Error.handle_error(Error.SEMANTIC.value)
 
-    @staticmethod
-    def replace(match):
-        a = hex(int(match.group(0)))
-        b = re.sub('x', '', a)
-        return "\\" + b;
+    def interpret_createframe(self, instruction) -> None:
+        if len(instruction.args) != 0:
+            Error.handle_error(Error.XML_STRUCT.value)
+        self.frames.create_frame()
 
-    def interpret_write(self, instruction: object) -> None:
-        new = re.sub('\d{3}', self.replace, instruction.args[0].value)
-        print(new)
+    def interpret_pushframe(self, instruction) -> None:
+        if len(instruction.args) != 0:
+            Error.handle_error(Error.XML_STRUCT.value)
+        self.frames.push_frame()
+
+    def interpret_popframe(self, instruction) -> None:
+        if len(instruction.args) != 0:
+            Error.handle_error(Error.XML_STRUCT.value)
+        self.frames.pop_frame()
+
+    def interpret_add_sub_mul_idiv(self, instruction: object, mode) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
+        frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        
+        value_1, type_1 = self.get_val_and_type(instruction.args[1])
+        value_2, type_2 = self.get_val_and_type(instruction.args[2])
+        
+        if type_1 != 'int' or type_2 != 'int':
+            Error.handle_error(Error.OP_TYPES.value)
+
+        value_1 = int(value_1)
+        value_2 = int(value_2)
+        match mode:
+            case 'add': value = value_1 + value_2
+            case 'sub': value = value_1 - value_2
+            case 'mul': value = value_1 * value_2
+            case 'idiv':
+                if value_2 == 0:
+                    Error.handle_error(Error.OP_VAL.value)
+                else:
+                    value = value_1 // value_2
+        
+        self.frames.set_var(var_name, frame, str(value), type_1)
+
+    def interpret_exit(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
+        type = instruction.args[0].type
+        value = instruction.args[0].value
+        value = int(value)
+
+        if type != 'int':
+            Error.handle_error(Error.OP_TYPES.value)
+
+        if value >= 0 and value <= 49:
+            exit(value)
+        else:
+            Error.handle_error(Error.OP_VAL.value)
+
+    def interpret_type(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
+
+        # frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        # value, type = self.get_val_and_type(instruction.args[1])
+        # self.frames.set_var(var_name, frame, type)
+
+    def interpret_call(self, instruction: object) -> None:
+        pass
+
+    def interpret_return(self, instruction: object) -> None:
+        pass
+
+    def interpret_pushs(self, instruction: object) -> None:
+        pass
+
+    def interpret_pops(self, instruction: object) -> None:
+        pass
+
+    def interpret_idiv(self, instruction: object) -> None:
+        pass
+
+    def interpret_ltgteq(self, instruction: object) -> None:
+        pass
+
+    def interpret_andornot(self, instruction: object) -> None:
+        pass
+
+    def interpret_int2char(self, instruction: object) -> None:
+        pass
+    
+    def interpret_stri2int(self, instruction: object) -> None:
+        pass
+
+    def interpret_read(self, instruction: object) -> None:
+        pass
+
+    def interpret_strlen(self, instruction: object) -> None:
+        pass
+
+    def interpret_getchar(self, instruction: object) -> None:
+        pass
+
+    def interpret_setchar(self, instruction: object) -> None:
+        pass
+
+    def interpret_jumpifneq(self, instruction: object) -> None:
+        pass
+
+    def interpret_dprint(self, instruction: object) -> None:
+        pass
+
+    def interpret_break(self, instruction: object) -> None:
+        pass

@@ -21,5 +21,4 @@ class Error(Enum):
 
     @staticmethod
     def handle_error(error_code: int):
-        print('Error: ' + str(error_code))
         exit(error_code)
