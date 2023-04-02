@@ -7,8 +7,7 @@ from my_arg_parse import Myargparse
 from error import Error
 import xml.etree.ElementTree as ET
 import xml_tree
-from instruction import Instruction
-from argument import Argument
+from program import Program
 
 parser = Myargparse(formatter_class=RawDescriptionHelpFormatter, description="""
 Skript načíta XML reprezentáciu programu a tento program s využitím vstupu
@@ -31,17 +30,44 @@ except (FileNotFoundError, PermissionError):
 except ET.ParseError:
     Error.handle_error(Error.XML_FORMAT.value)
 
-program = tree.getroot()
-xml_tree.check_program_element(program)
-xml_tree.check_instruction_elements(program)
+tree = tree.getroot()
+xml_tree.check_program_element(tree)
+xml_tree.check_instruction_elements(tree)
 
-for instruction in program:
-    opcode = instruction.attrib.get('opcode').upper()
-    order = instruction.attrib.get('order')
-    ins = Instruction(opcode, order)
-    
-    for argument in instruction:
-        type = argument.attrib.get('type')
-        value = argument.text
-        arg = Argument(type, value)
-        ins.add_arg(arg)
+program = Program()
+program.get_program_from_xml(tree)
+program.sort_instructions()
+
+for i in program.instructions:
+    match i.opcode:
+        case 'MOVE': program.interpret_move(i)
+        case 'CREATEFRAME': print('CREATEFRAME')
+        case 'PUSHFRAME': print('PUSHFRAME')
+        case 'POPFRAME': print('POPFRAME')
+        case 'DEFVAR': program.interpret_defvar(i)
+        case 'CALL': print('CALL')
+        case 'RETURN': print('RETURN')
+        case 'PUSHS': print('PUSHS')
+        case 'POPS': print('POPS')
+        case 'ADD': print('ADD')
+        case 'SUB': print('SUB')
+        case 'MUL': print('MUL')
+        case 'IDIV': print('IDIV')
+        case 'LT' | 'GT' | 'EQ': print('LT/GT/EQ')
+        case 'AND' | 'OR' | 'NOT': print('AND/OR/NOT')
+        case 'INT2CHAR': print('AND')
+        case 'STRI2INT': print('RETURN')
+        case 'READ': print('READ')
+        case 'WRITE': program.interpret_write(i)
+        case 'CONCAT': continue
+        case 'STRLEN': print('STRLEN')
+        case 'GETCHAR': print('GETCHAR')
+        case 'SETCHAR': print('SETCHAR')
+        case 'TYPE': print('TYPE')
+        case 'LABEL': continue
+        case 'JUMP': continue
+        case 'JUMPIFEQ': continue
+        case 'JUMPIFNEQ': print('JUMPIFNEQ')
+        case 'EXIT': print('EXIT')
+        case 'DPRINT': print('DPRINT')
+        case 'BREAK': print('BREAK')
