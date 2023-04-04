@@ -6,7 +6,7 @@ from error import Error
 import re
 from instruction import Instruction
 from argument import Argument
-from my_bool import Mybool
+import interpret_tools as tool
 
 def check_program_element(program: object) -> None:
     if (program.tag != 'program' or
@@ -27,7 +27,7 @@ def check_element_instruction(ins: object):
     opcode = opcode.upper()
     if opcode not in ['MOVE', 'CREATEFRAME', 'PUSHFRAME', 'POPFRAME', 'DEFVAR',
                       'CALL', 'RETURN', 'PUSHS', 'POPS', 'ADD', 'SUB', 'MUL',
-                      'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR', 'NOT', 'INT2CHAR'
+                      'IDIV', 'LT', 'GT', 'EQ', 'AND', 'OR', 'NOT', 'INT2CHAR',
                       'STRI2INT', 'READ', 'WRITE', 'CONCAT', 'STRLEN',
                       'GETCHAR', 'SETCHAR', 'TYPE', 'LABEL', 'JUMP', 'JUMPIFEQ',
                       'JUMPIFNEQ', 'EXIT', 'DPRINT', 'BREAK']:
@@ -46,16 +46,9 @@ def check_element_arg(arg: object):
         Error.handle_error(Error.XML_STRUCT.value)
     
     if value == None:
-        value = ""
+        value = ''
 
-    match type:
-        case 'int':
-            try:
-                value = int(value)
-            except ValueError:
-                Error.handle_error(Error.XML_STRUCT.value)
-        case 'bool': 
-            value = Mybool(value)
+    value = tool.convert(type, value)
 
     argument = Argument(type, value)
     argument.add_argument_position(arg.tag)
