@@ -55,17 +55,8 @@ class Frames:
         else:
             Error.handle_error(Error.SEMANTIC.value)
 
-    def set_var(self, var_name, frame_name: str, value: str, type: str) -> None:
+    def set_var(self, var_name, frame_name: str, value, type: str) -> None:
         frame = self.get_frame(frame_name)
-        
-        if type == 'var':
-            value = value.split("@")
-            frame_from = value[0]
-            var_name_from = value[1]
-            var = self.get_var(var_name_from, frame_from)
-            type = var.type
-            value = var.value
-        
         if var_name in frame:
             new_var = Variable(var_name, value, type)
             frame[var_name] = new_var
@@ -75,9 +66,20 @@ class Frames:
     def get_var(self, var_name: str, frame_name: str):
         frame = self.get_frame(frame_name)
         if var_name in frame:
-            value = frame.get(var_name)
-            if value == None:
+            var = frame.get(var_name)
+            if var == None:
                 Error.handle_error(Error.MISSING_VAL.value)
         else:
             Error.handle_error(Error.NO_VAR.value)
-        return value
+        return var
+    
+    def get_var_type(self, var_name: str, frame_name: str):
+        frame = self.get_frame(frame_name)
+        if var_name in frame:
+            var = frame.get(var_name)
+            if var == None:
+                return ''
+            else:
+                return var.type
+        else:
+            Error.handle_error(Error.NO_VAR.value)

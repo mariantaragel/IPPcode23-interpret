@@ -2,11 +2,11 @@
 # @brief Program representation
 # @author Marián Tarageľ
 
-from instruction import Instruction
-from argument import Argument
 from error import Error
 from frames import Frames
 import re
+import xml_tree
+from my_bool import Mybool
 
 class Program:
 
@@ -14,11 +14,13 @@ class Program:
     position: int
     labels: dict
     frames = Frames()
+    input: str
 
-    def __init__(self):
+    def __init__(self, input: str):
         self.instructions = []
         self.position = 0
         self.labels = {}
+        self.input = input
 
     def add_instruction_to_program(self, instruction: object) -> None:
         self.instructions.append(instruction)
@@ -33,18 +35,12 @@ class Program:
             return None
         
     def get_program_from_xml(self, tree: object) -> None:
+        xml_tree.check_program_element(tree)
         for child in tree:
-            opcode = child.attrib.get('opcode').upper()
-            order = child.attrib.get('order')
-            instruction = Instruction(opcode, int(order))
+            instruction = xml_tree.check_element_instruction(child)
         
             for subchild in child:
-                type = subchild.attrib.get('type')
-                value = subchild.text
-                if value == None:
-                    value = ""
-                argument = Argument(type, value)
-                argument.add_argument_position(subchild.tag)
+                argument = xml_tree.check_element_arg(subchild)
                 instruction.add_arg(argument)
 
             self.add_instruction_to_program(instruction)
@@ -68,7 +64,7 @@ class Program:
                 Error.handle_error(Error.SEMANTIC.value)
 
     @staticmethod
-    def get_var_frame_and_name(var: str) -> tuple[int, int]:
+    def get_var_frame_and_name(var: str) -> tuple[str, str]:
         arg = var.split("@")
         return arg[0], arg[1]
     
@@ -96,8 +92,7 @@ class Program:
         if len(instruction.args) != 2:
             Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
-        type = instruction.args[1].type
-        value = instruction.args[1].value
+        value, type = self.get_val_and_type(instruction.args[1])
         self.frames.set_var(var_name, frame, value, type)
 
     # TODO: špecialny prípad type == bool (viz. spec)
@@ -105,6 +100,7 @@ class Program:
         if len(instruction.args) != 1:
             Error.handle_error(Error.XML_STRUCT.value)
         value, type = self.get_val_and_type(instruction.args[0])
+        value = str(value)
         
         if type == 'nil':
             value = ''
@@ -176,8 +172,6 @@ class Program:
         if type_1 != 'int' or type_2 != 'int':
             Error.handle_error(Error.OP_TYPES.value)
 
-        value_1 = int(value_1)
-        value_2 = int(value_2)
         match mode:
             case 'add': value = value_1 + value_2
             case 'sub': value = value_1 - value_2
@@ -188,14 +182,13 @@ class Program:
                 else:
                     value = value_1 // value_2
         
-        self.frames.set_var(var_name, frame, str(value), type_1)
+        self.frames.set_var(var_name, frame, value, type_1)
 
     def interpret_exit(self, instruction: object) -> None:
         if len(instruction.args) != 1:
             Error.handle_error(Error.XML_STRUCT.value)
         type = instruction.args[0].type
         value = instruction.args[0].value
-        value = int(value)
 
         if type != 'int':
             Error.handle_error(Error.OP_TYPES.value)
@@ -206,12 +199,41 @@ class Program:
             Error.handle_error(Error.OP_VAL.value)
 
     def interpret_type(self, instruction: object) -> None:
-        if len(instruction.args) != 1:
+        if len(instruction.args) != 2:
             Error.handle_error(Error.XML_STRUCT.value)
 
-        # frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
-        # value, type = self.get_val_and_type(instruction.args[1])
-        # self.frames.set_var(var_name, frame, type)
+        frame_to, var_name_to = self.get_var_frame_and_name(instruction.args[0].value)
+
+        type = instruction.args[1].type
+        value = instruction.args[1].value
+        if type == 'var':
+            frame_from, var_name_from = self.get_var_frame_and_name(value)
+            type = self.frames.get_var_type(var_name_from, frame_from)
+
+        self.frames.set_var(var_name_to, frame_to, type, 'string')
+
+    def interpret_read(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
+
+        frame, var_name = self.get_var_frame_and_name(instruction.args[0].value)
+        input_type = instruction.args[1].value
+        
+        value = input()
+        if self.input == 'STDIN':
+            value = input()
+        else:
+            try:
+                f = open(self.input, "r")
+            except (FileNotFoundError, PermissionError):
+                Error.handle_error(Error.IN_FILE.value)
+            value = f.readline()
+        
+        match input_type:
+            case 'int': value = int(value)
+            case 'bool': value = Mybool(value)
+
+        self.frames.set_var(var_name, frame, value, input_type)
 
     def interpret_call(self, instruction: object) -> None:
         pass
@@ -225,9 +247,6 @@ class Program:
     def interpret_pops(self, instruction: object) -> None:
         pass
 
-    def interpret_idiv(self, instruction: object) -> None:
-        pass
-
     def interpret_ltgteq(self, instruction: object) -> None:
         pass
 
@@ -238,9 +257,6 @@ class Program:
         pass
     
     def interpret_stri2int(self, instruction: object) -> None:
-        pass
-
-    def interpret_read(self, instruction: object) -> None:
         pass
 
     def interpret_strlen(self, instruction: object) -> None:
