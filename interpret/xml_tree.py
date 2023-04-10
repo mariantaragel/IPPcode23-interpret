@@ -49,6 +49,8 @@ def check_element_arg(arg: object):
         value = ''
 
     value = tool.convert(type, value)
+    if value == None:
+        Error.handle_error(Error.XML_STRUCT.value)
 
     argument = Argument(type, value)
     argument.add_argument_position(arg.tag)

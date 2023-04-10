@@ -16,6 +16,7 @@ class Program:
     frames = Frames()
     input
     call_stack: list
+    data_stack: list
 
     def __init__(self, input):
         self.instructions = []
@@ -23,6 +24,7 @@ class Program:
         self.labels = {}
         self.input = input
         self.call_stack = []
+        self.data_stack = []
 
     def add_instruction_to_program(self, instruction: object) -> None:
         self.instructions.append(instruction)
@@ -176,8 +178,7 @@ class Program:
         self.frames.set_var(var_name, frame, value, type_1)
 
     def interpret_exit(self, instruction: object) -> None:
-        type = instruction.args[0].type
-        value = instruction.args[0].value
+        value, type = self.get_val_and_type(instruction.args[0])
 
         if type != 'int':
             Error.handle_error(Error.OP_TYPES.value)
@@ -198,7 +199,6 @@ class Program:
 
         self.frames.set_var(var_name_to, frame_to, type, 'string')
 
-    # TODO: zlý vstup -> nil@nil
     def interpret_read(self, instruction: object) -> None:
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         type = instruction.args[1].value
@@ -206,10 +206,17 @@ class Program:
         if self.input == 'STDIN':
             value = input()
         else:
-            value = self.input.readline().strip()
-
+            value = self.input.readline()
+        
         value = tool.convert(type, value)
-        self.frames.set_var(var_name, frame, value, type)
+        
+        if value == None or value == '':
+            self.frames.set_var(var_name, frame, 'nil', 'nil')
+        else:
+            if type == 'string':
+                value = value.strip()
+            self.frames.set_var(var_name, frame, value, type)
+            
 
     def interpret_andor(self, instruction: object, mode: str) -> None:
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
@@ -265,7 +272,6 @@ class Program:
         if len(string) <= index or index < 0 or char == '':
             Error.handle_error(Error.STRING.value)
 
-
         string = string[:index] + char[0] + string[index + 1:]
         self.frames.set_var(var_name, frame, string, 'string')
 
@@ -290,19 +296,48 @@ class Program:
             Error.handle_error(Error.STRING.value)
 
         ord_val = ord(string[index])
-        self.frames.set_var(var_name, frame, ord_val, 'int')        
+        self.frames.set_var(var_name, frame, ord_val, 'int')
 
     def interpret_pushs(self, instruction: object) -> None:
-        pass
+        value, type = self.get_val_and_type(instruction.args[0])
+        self.data_stack.insert(0, (value, type))
 
     def interpret_pops(self, instruction: object) -> None:
-        pass
+        frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
+        if self.data_stack != []:
+            top_stack_item = self.data_stack.pop(0)
+            value = top_stack_item[0]
+            type = top_stack_item[1]
+        else:
+            Error.handle_error(Error.MISSING_VAL.value)
 
-    def interpret_int2char(self, instruction: object) -> None:
-        pass
+        self.frames.set_var(var_name, frame, value, type)
 
     def interpret_getchar(self, instruction: object) -> None:
-        pass
+        frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
+        string, string_type = self.get_val_and_type(instruction.args[1])
+        index, index_type = self.get_val_and_type(instruction.args[2])
+
+        if string_type != 'string' or index_type != 'int':
+            Error.handle_error(Error.OP_TYPES.value)
+        if len(string) <= index or index < 0 or string == '':
+            Error.handle_error(Error.STRING.value)
+
+        char = string[index]
+        self.frames.set_var(var_name, frame, char, 'string')
+
+    def interpret_int2char(self, instruction: object) -> None:
+        frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
+        number, type = self.get_val_and_type(instruction.args[1])
+
+        if type != 'int':
+            Error.handle_error(Error.OP_TYPES.value)
+
+        try:
+            char = chr(number)
+        except ValueError:
+            Error.handle_error(Error.STRING.value)
+        self.frames.set_var(var_name, frame, char, 'string')
 
     def interpret_dprint(self, instruction: object) -> None:
         pass

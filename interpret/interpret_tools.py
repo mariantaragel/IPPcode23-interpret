@@ -10,9 +10,11 @@ def convert(type, value):
             try:
                 value = int(value)
             except ValueError:
-                Error.handle_error(Error.XML_STRUCT.value)
+                value = None
         case 'bool':
-            if value.lower() == 'true': 
+            if value == '':
+                value = None
+            elif value.lower() == 'true': 
                 value = True
             else:
                 value = False
