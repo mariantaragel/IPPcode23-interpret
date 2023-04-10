@@ -8,13 +8,13 @@ def convert(type, value):
     match type:
         case 'int':
             try:
-                value = int(value)
+                value = int(value.strip())
             except ValueError:
                 value = None
         case 'bool':
             if value == '':
                 value = None
-            elif value.lower() == 'true': 
+            elif value.lower().strip() == 'true': 
                 value = True
             else:
                 value = False

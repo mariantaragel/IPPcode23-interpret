@@ -7,6 +7,7 @@ from frames import Frames
 import re
 import xml_tree
 import interpret_tools as tool
+import sys
 
 class Program:
 
@@ -17,6 +18,8 @@ class Program:
     input
     call_stack: list
     data_stack: list
+    instructions_executed: int
+    last_instruction: object
 
     def __init__(self, input):
         self.instructions = []
@@ -25,6 +28,8 @@ class Program:
         self.input = input
         self.call_stack = []
         self.data_stack = []
+        self.instructions_executed = 0
+        self.last_instruction = None
 
     def add_instruction_to_program(self, instruction: object) -> None:
         self.instructions.append(instruction)
@@ -42,11 +47,21 @@ class Program:
         xml_tree.check_program_element(tree)
         for child in tree:
             instruction = xml_tree.check_element_instruction(child)
+            print(instruction.opcode, instruction.order)
         
+            arg1 = None
+            arg2 = None
+            arg3 = None
             for subchild in child:
                 argument = xml_tree.check_element_arg(subchild)
-                instruction.add_arg(argument)
+                if argument.position == 0:
+                    arg1 = argument
+                elif argument.position == 1:
+                    arg2 = argument
+                else:
+                    arg3 = argument
 
+            instruction.add_args(arg1, arg2, arg3)
             self.add_instruction_to_program(instruction)
 
     def prepocessing(self) -> None:
@@ -89,7 +104,7 @@ class Program:
         value, type = self.get_val_and_type(instruction.args[1])
         self.frames.set_var(var_name, frame, value, type)
 
-    def interpret_write(self, instruction: object) -> None:
+    def interpret_write_dprint(self, instruction: object, stream) -> None:
         value, type = self.get_val_and_type(instruction.args[0])
         value = str(value)
         
@@ -98,7 +113,7 @@ class Program:
         elif type == 'bool':
             value = value.lower()
 
-        print(value, end='')
+        print(value, end='', file=stream)
 
     def interpret_concat(self, instruction: object) -> None:
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
@@ -339,8 +354,19 @@ class Program:
             Error.handle_error(Error.STRING.value)
         self.frames.set_var(var_name, frame, char, 'string')
 
-    def interpret_dprint(self, instruction: object) -> None:
-        pass
-
     def interpret_break(self, instruction: object) -> None:
-        pass
+        print("Last instruction: ", end="")
+        if self.last_instruction != None:
+            print(self.last_instruction.opcode)
+        else:
+            print("None")
+        print("Code postition: " + str(instruction.order), file=sys.stderr)
+        print("Instructions executed: " + str(self.instructions_executed), file=sys.stderr)
+        print()
+        self.frames.print_frames()
+        print()
+        print("Data stack:")
+        print(self.data_stack)
+        print()
+        print("Call stack:")
+        print(self.call_stack)

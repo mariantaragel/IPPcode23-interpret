@@ -72,7 +72,7 @@ while True:
         case 'INT2CHAR': program.interpret_int2char(ins_element)
         case 'STRI2INT': program.interpret_stri2int(ins_element)
         case 'READ': program.interpret_read(ins_element)
-        case 'WRITE': program.interpret_write(ins_element)
+        case 'WRITE': program.interpret_write_dprint(ins_element, sys.stdout)
         case 'CONCAT': program.interpret_concat(ins_element)
         case 'STRLEN': program.interpret_strlen(ins_element)
         case 'GETCHAR': program.interpret_getchar(ins_element)
@@ -83,6 +83,8 @@ while True:
         case 'JUMPIFEQ': program.interpret_jumpif(ins_element, 'eq')
         case 'JUMPIFNEQ': program.interpret_jumpif(ins_element, 'neq')
         case 'EXIT': program.interpret_exit(ins_element)
-        case 'DPRINT': program.interpret_dprint(ins_element)
+        case 'DPRINT': program.interpret_write_dprint(ins_element, sys.stderr)
         case 'BREAK': program.interpret_break(ins_element)
         case _: Error.handle_error(Error.XML_STRUCT.value)
+    program.instructions_executed += 1
+    program.last_instruction = ins_element

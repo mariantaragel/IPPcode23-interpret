@@ -83,3 +83,37 @@ class Frames:
                 return var.type
         else:
             Error.handle_error(Error.NO_VAR.value)
+
+    def print_frames(self) -> None:
+        print("Global frame:")
+        self.print_frame(self.global_frame)
+        print()
+
+        print("Local frame:")
+        if len(self.frame_stack) == 0:
+            print("Undefined")
+        else:
+            self.print_frame(self.frame_stack[0])
+        print()
+
+        print("Temporary frame:")
+        if self.temporary_frame == None:
+            print("Undefined")
+        else:
+            self.print_frame(self.temporary_frame)
+
+    @staticmethod
+    def print_frame(frame: dict) -> None:
+        print("{", end="")
+        first = True
+        for var_name in frame:
+            if not first:
+                print(", ", end="")
+            var = frame.get(var_name)
+            print("'" + var_name + "': ", end="")
+            if var != None:
+                print("'" + str(var.value) + "'", end="")
+            else:
+                print("None", end="")
+            first = False
+        print("}")
