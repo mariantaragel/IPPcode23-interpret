@@ -6,3 +6,5 @@ test.php
 jexamxml.jar
 *.src
 *.in
+*.zip
+

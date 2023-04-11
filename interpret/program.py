@@ -47,7 +47,6 @@ class Program:
         xml_tree.check_program_element(tree)
         for child in tree:
             instruction = xml_tree.check_element_instruction(child)
-            print(instruction.opcode, instruction.order)
         
             arg1 = None
             arg2 = None
@@ -96,15 +95,21 @@ class Program:
         return value, type
 
     def interpret_defvar(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         self.frames.def_var(var_name, frame)
 
     def interpret_move(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         value, type = self.get_val_and_type(instruction.args[1])
         self.frames.set_var(var_name, frame, value, type)
 
     def interpret_write_dprint(self, instruction: object, stream) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         value, type = self.get_val_and_type(instruction.args[0])
         value = str(value)
         
@@ -116,6 +121,8 @@ class Program:
         print(value, end='', file=stream)
 
     def interpret_concat(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         value_1, type_1 = self.get_val_and_type(instruction.args[1])
         value_2, type_2 = self.get_val_and_type(instruction.args[2])
@@ -136,6 +143,8 @@ class Program:
             Error.handle_error(Error.SEMANTIC.value)
 
     def interpret_jumpif(self, instruction: object, mode: str) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         label_name = instruction.args[0].value
         value_1, type_1 = self.get_val_and_type(instruction.args[1])
         value_2, type_2 = self.get_val_and_type(instruction.args[2])
@@ -173,6 +182,8 @@ class Program:
         self.frames.pop_frame()
 
     def interpret_add_sub_mul_idiv(self, instruction: object, mode) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         value_1, type_1 = self.get_val_and_type(instruction.args[1])
         value_2, type_2 = self.get_val_and_type(instruction.args[2])
@@ -193,6 +204,8 @@ class Program:
         self.frames.set_var(var_name, frame, value, type_1)
 
     def interpret_exit(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         value, type = self.get_val_and_type(instruction.args[0])
 
         if type != 'int':
@@ -204,6 +217,8 @@ class Program:
             Error.handle_error(Error.OP_VAL.value)
 
     def interpret_type(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame_to, var_name_to = tool.get_var_frame_and_name(instruction.args[0].value)
         type = instruction.args[1].type
         value = instruction.args[1].value
@@ -215,6 +230,8 @@ class Program:
         self.frames.set_var(var_name_to, frame_to, type, 'string')
 
     def interpret_read(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         type = instruction.args[1].value
         
@@ -234,6 +251,8 @@ class Program:
             
 
     def interpret_andor(self, instruction: object, mode: str) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         value_1, type_1 = self.get_val_and_type(instruction.args[1])
         value_2, type_2 = self.get_val_and_type(instruction.args[2])
@@ -248,6 +267,8 @@ class Program:
         self.frames.set_var(var_name, frame, value, 'bool')
     
     def interpret_not(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         
         value, type = self.get_val_and_type(instruction.args[1])
@@ -259,6 +280,8 @@ class Program:
         self.frames.set_var(var_name, frame, value, 'bool')
 
     def interpret_ltgteq(self, instruction: object, mode: str) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         value_1, type_1 = self.get_val_and_type(instruction.args[1])
         value_2, type_2 = self.get_val_and_type(instruction.args[2])
@@ -277,6 +300,8 @@ class Program:
         self.frames.set_var(var_name, frame, value, 'bool')
 
     def interpret_setchar(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         string, string_type = self.get_val_and_type(instruction.args[0])
         index, index_type = self.get_val_and_type(instruction.args[1])
@@ -291,6 +316,8 @@ class Program:
         self.frames.set_var(var_name, frame, string, 'string')
 
     def interpret_strlen(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         string, type = self.get_val_and_type(instruction.args[1])
         
@@ -301,6 +328,8 @@ class Program:
         self.frames.set_var(var_name, frame, strlen, 'int')
 
     def interpret_stri2int(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         string, string_type = self.get_val_and_type(instruction.args[1])
         index, index_type = self.get_val_and_type(instruction.args[2])
@@ -314,10 +343,14 @@ class Program:
         self.frames.set_var(var_name, frame, ord_val, 'int')
 
     def interpret_pushs(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         value, type = self.get_val_and_type(instruction.args[0])
         self.data_stack.insert(0, (value, type))
 
     def interpret_pops(self, instruction: object) -> None:
+        if len(instruction.args) != 1:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         if self.data_stack != []:
             top_stack_item = self.data_stack.pop(0)
@@ -329,6 +362,8 @@ class Program:
         self.frames.set_var(var_name, frame, value, type)
 
     def interpret_getchar(self, instruction: object) -> None:
+        if len(instruction.args) != 3:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         string, string_type = self.get_val_and_type(instruction.args[1])
         index, index_type = self.get_val_and_type(instruction.args[2])
@@ -342,6 +377,8 @@ class Program:
         self.frames.set_var(var_name, frame, char, 'string')
 
     def interpret_int2char(self, instruction: object) -> None:
+        if len(instruction.args) != 2:
+            Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
         number, type = self.get_val_and_type(instruction.args[1])
 
@@ -355,6 +392,8 @@ class Program:
         self.frames.set_var(var_name, frame, char, 'string')
 
     def interpret_break(self, instruction: object) -> None:
+        if len(instruction.args) != 0:
+            Error.handle_error(Error.XML_STRUCT.value)
         print("Last instruction: ", end="")
         if self.last_instruction != None:
             print(self.last_instruction.opcode)
