@@ -11,7 +11,7 @@ import interpret_tools as tool
 def check_program_element(program: object) -> None:
     if (program.tag != 'program' or
         program.attrib.get('language') != 'IPPcode23'):
-        
+
         Error.handle_error(Error.XML_STRUCT.value)
 
 def check_element_instruction(ins: object):
@@ -20,8 +20,7 @@ def check_element_instruction(ins: object):
 
     if (ins.tag != 'instruction' or
         order == None or opcode == None or
-        re.match('^[1-9]\d*$', str(order)) == None):
-
+        re.match('^[1-9]\d*$', str(order).strip()) == None):
         Error.handle_error(Error.XML_STRUCT.value)
     
     opcode = opcode.upper()
@@ -47,6 +46,9 @@ def check_element_arg(arg: object):
     
     if value == None:
         value = ''
+
+    if type == 'string':
+        value = value.strip()
 
     value = tool.convert(type, value)
     if value == None:

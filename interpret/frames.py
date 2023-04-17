@@ -47,6 +47,8 @@ class Frames:
                     return self.frame_stack[0]
                 else:
                     Error.handle_error(Error.NO_FRAME.value)
+            case _:
+                Error.handle_error(Error.SEMANTIC.value)
 
     def def_var(self, var_name: str, frame_name: str) -> None:
         frame = self.get_frame(frame_name)

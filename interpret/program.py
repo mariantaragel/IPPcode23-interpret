@@ -47,17 +47,23 @@ class Program:
         xml_tree.check_program_element(tree)
         for child in tree:
             instruction = xml_tree.check_element_instruction(child)
-        
+
             arg1 = None
             arg2 = None
             arg3 = None
             for subchild in child:
                 argument = xml_tree.check_element_arg(subchild)
                 if argument.position == 0:
+                    if arg1 != None:
+                        Error.handle_error(Error.XML_STRUCT.value)
                     arg1 = argument
                 elif argument.position == 1:
+                    if arg2 != None:
+                        Error.handle_error(Error.XML_STRUCT.value)
                     arg2 = argument
                 else:
+                    if arg3 != None:
+                        Error.handle_error(Error.XML_STRUCT.value)
                     arg3 = argument
 
             instruction.add_args(arg1, arg2, arg3)
@@ -233,15 +239,22 @@ class Program:
         if len(instruction.args) != 2:
             Error.handle_error(Error.XML_STRUCT.value)
         frame, var_name = tool.get_var_frame_and_name(instruction.args[0].value)
-        type = instruction.args[1].value
+        symb_type = instruction.args[1].value
+        if symb_type == 'var':
+            value, type = self.get_val_and_type(instruction.args[1])
+        else:
+            type = instruction.args[1].value
         
+        if type != 'int' and type != 'string' and type != 'bool':
+            Error.handle_error(Error.XML_STRUCT.value)
+
         if self.input == 'STDIN':
             value = input()
         else:
             value = self.input.readline()
         
         value = tool.convert(type, value)
-        
+
         if value == None or value == '':
             self.frames.set_var(var_name, frame, 'nil', 'nil')
         else:

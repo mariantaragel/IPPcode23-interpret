@@ -2,8 +2,6 @@
 # @brief Helpful tools of interpret
 # @author Marián Tarageľ
 
-from error import Error
-
 def convert(type, value):
     match type:
         case 'int':
@@ -18,6 +16,8 @@ def convert(type, value):
                 value = True
             else:
                 value = False
+        case 'var':
+            value = value.strip()
     return value
 
 def get_var_frame_and_name(var: str) -> tuple[str, str]:
