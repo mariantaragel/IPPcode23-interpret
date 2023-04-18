@@ -13,7 +13,7 @@ class Argument:
         self.value = value
         self.position = 0
 
-
+    # Add argument number
     def add_argument_position(self, tag):
         match tag:
             case 'arg1':

@@ -20,5 +20,6 @@ class Error(Enum):
     STRING = 58
 
     @staticmethod
+    # Handle error states
     def handle_error(error_code: int):
         exit(error_code)

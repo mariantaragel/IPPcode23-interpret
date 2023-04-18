@@ -20,6 +20,7 @@ class Myargparse(argparse.ArgumentParser):
         args = {'prog': self.prog, 'message': message}
         self.exit(Error.ARGS.value, ('%(prog)s: error: %(message)s\n') % args)
         
+    # Check --help with other arguments
     def check_args_cobination(self, args: object):
         if args.help and self.is_input_defined(args):
             self.error('cannot combine --help with other arguments')

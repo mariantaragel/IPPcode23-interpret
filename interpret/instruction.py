@@ -15,9 +15,11 @@ class Instruction:
         self.args = []
         self.order = order
 
+    # Add one argument
     def add_arg(self, arg: object) -> None:
         self.args.insert(arg.position, arg)
 
+    # Add al arguments
     def add_args(self, arg1: object, arg2: object, arg3: object) -> None:
         if arg1 == None and arg2 != None:
             Error.handle_error(Error.XML_STRUCT.value)
